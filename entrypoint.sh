@@ -71,13 +71,6 @@ trap killzerotier INT TERM
 log "Configuring networks to join"
 mkdir -p /var/lib/zerotier-one/networks.d
 
-log_params "Joining networks from command line:" $@
-for i in "$@"
-do
-  log_detail_params "Configuring join:" "$i"
-  touch "/var/lib/zerotier-one/networks.d/${i}.conf"
-done
-
 if [ "x$ZEROTIER_JOIN_NETWORKS" != "x" ]
 then
   log_params "Joining networks from environment:" $ZEROTIER_JOIN_NETWORKS
@@ -117,9 +110,10 @@ chmod +x /healthcheck.sh
 
 log_params "zerotier-cli info:" "$(zerotier-cli info)"
 
-log "Starting service"
 if [ -f ./run-service.sh ]; then
-    ./run-service.sh
+  log "Starting service"
+  chmod+ x ./run-service.sh
+  ./run-service.sh
 else
     echo "Error: run-service.sh does not exist."
 fi
