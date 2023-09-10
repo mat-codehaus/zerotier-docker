@@ -1,6 +1,6 @@
 FROM debian:bullseye
 
-ARG VERSION
+ARG VERSION=1.12.1
 
 RUN apt-get update -qq && apt-get install curl gpg -y
 RUN mkdir -p /usr/share/zerotier && \
