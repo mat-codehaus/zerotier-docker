@@ -73,6 +73,36 @@ mkdir -p /var/lib/zerotier-one/networks.d
 
 if [ "x$ZEROTIER_JOIN_NETWORKS" != "x" ]
 then
+
+  log "Starting ZeroTier"
+  nohup /usr/sbin/zerotier-one &
+
+  while ! grepzt
+  do
+    log_detail "ZeroTier hasn't started, waiting a second"
+
+    if [ -f nohup.out ]
+    then
+      tail -n 10 nohup.out
+    fi
+
+    sleep 1
+  done
+
+  log_params "Writing healthcheck for networks:" $ZEROTIER_JOIN_NETWORKS
+
+cat >/healthcheck.sh <<EOF
+  #!/bin/bash
+  for i in $ZEROTIER_JOIN_NETWORKS
+  do
+    [ "\$(zerotier-cli get \$i status)" = "OK" ] || exit 1
+  done
+EOF
+
+  chmod +x /healthcheck.sh
+
+  log_params "zerotier-cli info:" "$(zerotier-cli info)"
+
   log_params "Joining networks from environment:" $ZEROTIER_JOIN_NETWORKS
   for i in $ZEROTIER_JOIN_NETWORKS
   do
@@ -80,35 +110,6 @@ then
     touch "/var/lib/zerotier-one/networks.d/${i}.conf"
   done
 fi
-
-log "Starting ZeroTier"
-nohup /usr/sbin/zerotier-one &
-
-while ! grepzt
-do
-  log_detail "ZeroTier hasn't started, waiting a second"
-
-  if [ -f nohup.out ]
-  then
-    tail -n 10 nohup.out
-  fi
-
-  sleep 1
-done
-
-log_params "Writing healthcheck for networks:" $@
-
-cat >/healthcheck.sh <<EOF
-#!/bin/bash
-for i in $@ $ZEROTIER_JOIN_NETWORKS
-do
-  [ "\$(zerotier-cli get \$i status)" = "OK" ] || exit 1
-done
-EOF
-
-chmod +x /healthcheck.sh
-
-log_params "zerotier-cli info:" "$(zerotier-cli info)"
 
 if [ -f ./run-service.sh ]; then
   log "Starting service"
