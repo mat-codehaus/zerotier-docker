@@ -113,7 +113,7 @@ log_params "zerotier-cli info:" "$(zerotier-cli info)"
 if [ -f ./run-service.sh ]; then
   log "Starting service"
   chmod +x ./run-service.sh
-  ./run-service.sh
+  ./run-service.sh $@
 else
     echo "Error: run-service.sh does not exist."
 fi
