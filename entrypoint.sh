@@ -71,38 +71,9 @@ trap killzerotier INT TERM
 log "Configuring networks to join"
 mkdir -p /var/lib/zerotier-one/networks.d
 
+
 if [ "x$ZEROTIER_JOIN_NETWORKS" != "x" ]
 then
-
-  log "Starting ZeroTier"
-  nohup /usr/sbin/zerotier-one &
-
-  while ! grepzt
-  do
-    log_detail "ZeroTier hasn't started, waiting a second"
-
-    if [ -f nohup.out ]
-    then
-      tail -n 10 nohup.out
-    fi
-
-    sleep 1
-  done
-
-  log_params "Writing healthcheck for networks:" $ZEROTIER_JOIN_NETWORKS
-
-cat >/healthcheck.sh <<EOF
-  #!/bin/bash
-  for i in $ZEROTIER_JOIN_NETWORKS
-  do
-    [ "\$(zerotier-cli get \$i status)" = "OK" ] || exit 1
-  done
-EOF
-
-  chmod +x /healthcheck.sh
-
-  log_params "zerotier-cli info:" "$(zerotier-cli info)"
-
   log_params "Joining networks from environment:" $ZEROTIER_JOIN_NETWORKS
   for i in $ZEROTIER_JOIN_NETWORKS
   do
@@ -111,10 +82,42 @@ EOF
   done
 fi
 
+log "Starting ZeroTier"
+nohup /usr/sbin/zerotier-one &
+
+# TODO fix underlying issue - for some reason, on a docker stop/start, grepzt return true straight away. sleep 1 forces a 1 second wait regardless and for now, the restart works, giving zerotier time to start.
+sleep 1
+
+while ! grepzt
+do
+  log_detail "ZeroTier hasn't started, waiting a second"
+
+  if [ -f nohup.out ]
+  then
+    tail -n 10 nohup.out
+  fi
+
+  sleep 1
+done
+
+log_params "Writing healthcheck for networks:" $ZEROTIER_JOIN_NETWORKS
+
+cat >/healthcheck.sh <<EOF
+#!/bin/bash
+for i in $ZEROTIER_JOIN_NETWORKS
+do
+  [ "\$(zerotier-cli get \$i status)" = "OK" ] || exit 1
+done
+EOF
+
+chmod +x /healthcheck.sh
+
+log_params "zerotier-cli info:" "$(zerotier-cli info)"
+
 if [ -f ./run-service.sh ]; then
   log "Starting service"
   chmod +x ./run-service.sh
-  ./run-service.sh $@
+  exec ./run-service.sh $@
 else
     echo "Error: run-service.sh does not exist."
 fi

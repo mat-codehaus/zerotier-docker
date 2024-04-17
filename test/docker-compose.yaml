@@ -1,0 +1,22 @@
+services:
+
+  zt-builder:
+    image: zt-builder
+    build:
+      context: ../
+      dockerfile: ./Dockerfile
+      
+
+  zt-test:
+    build:
+      context: .
+      dockerfile: ./Dockerfile
+    # env_file:
+    #   - .env
+    cap_add:
+      - NET_ADMIN
+    devices:
+      - "/dev/net/tun"
+    environment:
+      - ZEROTIER_JOIN_NETWORKS
+    restart: always
